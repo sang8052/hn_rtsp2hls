@@ -1,0 +1,8 @@
+{
+
+  "hls_dir":    "/www/wwwroot/sign.szhcloud.cn/hls/",
+  "log_dir": "./logs/",
+  "rect_port":  8999,
+  "rect_ip":  "0.0.0.0",
+  "task_time": 3600
+}

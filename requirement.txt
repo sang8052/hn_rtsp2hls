@@ -1,0 +1,6 @@
+flask
+requests
+pyinstaller
+psutil
+uuid
+
