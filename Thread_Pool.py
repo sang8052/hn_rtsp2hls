@@ -38,6 +38,16 @@ class Thread_Pool (threading.Thread):
                                 public.Print_Log("线程[" + task["taskId"] + "]因 视频启动超时 已经被从线程池移除",
                                                      self.log_dir + "run.log")
                                 os.system("bash kill-super.sh  " + task["threadPid"])
+                            else:
+                                nthreadPool.append(thread)
+                                task["threadHeart"] = int(time.time())
+                                task["task_run"] = runTime
+                                ntasks.append(task)
+                        else:
+                            nthreadPool.append(thread)
+                            task["threadHeart"] = int(time.time())
+                            task["task_run"] = runTime
+                            ntasks.append(task)
                     else:
                         thread = self.find_thread(task["taskId"])
                         if thread:
@@ -93,15 +103,21 @@ class Thread_Pool (threading.Thread):
     def remove_thread(self,threadId):
         threadPool = []
         for thread in self.threadPool:
-            if thread.threadId != threadId:
-                threadPool.append(thread)
+            try:
+                if thread.threadId != threadId:
+                    threadPool.append(thread)
+            except:
+                pass
         self.threadPool = threadPool
 
 
     def find_thread(self,threadId):
         for thread in self.threadPool:
-            if thread.threadId == threadId:
-                return thread
+            try:
+                if thread.threadId == threadId:
+                    return thread
+            except:
+                pass
         return False
 
 

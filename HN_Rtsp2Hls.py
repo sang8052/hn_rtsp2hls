@@ -11,7 +11,7 @@ _ip = ""
 _task_time = 0
 _log_dir = ""
 _hls_dir = ""
-_ver = "1.1.beta"
+_ver = "1.3.beta"
 
 api = Flask(__name__)
 
