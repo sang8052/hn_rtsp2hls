@@ -33,7 +33,7 @@ class HN_Task():
                     TaskSleep.append(task)
                     Task.append(task)
             public.WriteFile(self.log_taskLine,json.dumps(Task))
-            taskLine = {"alive": TaskAlive, "sleep": TaskSleep, "all": Task}
+            taskLine = { "alive": Task,"all":tasks}
         return taskLine
 
     def getTaskAll(self):

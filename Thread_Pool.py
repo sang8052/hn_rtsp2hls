@@ -32,12 +32,12 @@ class Thread_Pool (threading.Thread):
                     os.system("bash kill-super.sh  " + task["threadPid"])
                     public.Print_Log("线程[" + task["taskId"] + "]因 超过最大运行时间 已经被从线程池移除",self.log_dir + "run.log")
                 else:
-                    if heart > 2 and not task["waitRun"]:
-                        public.Print_Log("线程[" + task["taskId"] + "]因 心跳超时 已经被从线程池移除", self.log_dir + "run.log")
-                        os.system("bash kill-super.sh  " + task["threadPid"])
-                        public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...", self.log_dir + "run.log")
-                        thread = self.task.resetTaskLine(task)
-                        nthreadPool.append(thread)
+                    if not task["waitRun"]:
+                        if "play_status" in task:
+                            if task["play_status"] == "timeout":
+                                public.Print_Log("线程[" + task["taskId"] + "]因 视频启动超时 已经被从线程池移除",
+                                                     self.log_dir + "run.log")
+                                os.system("bash kill-super.sh  " + task["threadPid"])
                     else:
                         thread = self.find_thread(task["taskId"])
                         if thread:
