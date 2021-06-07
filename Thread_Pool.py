@@ -32,7 +32,7 @@ class Thread_Pool (threading.Thread):
                     os.system("bash kill-super.sh  " + task["threadPid"])
                     public.Print_Log("线程[" + task["taskId"] + "]因 超过最大运行时间 已经被从线程池移除",self.log_dir + "run.log")
                 else:
-                    if heart > 2:
+                    if heart > 2 and not task["waitRun"]:
                         public.Print_Log("线程[" + task["taskId"] + "]因 心跳超时 已经被从线程池移除", self.log_dir + "run.log")
                         os.system("bash kill-super.sh  " + task["threadPid"])
                         public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...", self.log_dir + "run.log")
@@ -43,7 +43,6 @@ class Thread_Pool (threading.Thread):
                         if thread:
                             task["threadPid"] = thread.get_threadPid()
                             if task["threadPid"]!="":
-
                                 process = public.get_process_status(int(task["threadPid"]))
                                 if process=="killed":
                                     public.Print_Log("线程[" + task["taskId"] + "]因 无法找到进程对象（"+task["threadPid"]+"） 已经被从线程池移除",self.log_dir + "run.log")
@@ -62,11 +61,18 @@ class Thread_Pool (threading.Thread):
                                 task["task_run"] = runTime
                                 ntasks.append(task)
                         else:
-                            public.Print_Log("线程[" + task["taskId"] + "]因 无法找到线程池对象 已经被从线程池移除",self.log_dir + "run.log")
-                            os.system("bash kill-super.sh  " + task["threadPid"])
-                            public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...", self.log_dir + "run.log")
-                            thread = self.task.resetTaskLine(task)
-                            nthreadPool.append(thread)
+                            if not task["waitRun"]:
+                                public.Print_Log("线程[" + task["taskId"] + "]因 无法找到线程池对象 已经被从线程池移除",
+                                                 self.log_dir + "run.log")
+                                os.system("bash kill-super.sh  " + task["threadPid"])
+                                public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...", self.log_dir + "run.log")
+                                thread = self.task.resetTaskLine(task)
+                                nthreadPool.append(thread)
+                            else:
+                                task["threadHeart"] = int(time.time())
+                                task["task_run"] = runTime
+                                ntasks.append(task)
+
 
             self.threadPool = nthreadPool
             public.WriteFile(self.log_dir + "taskLine.json", json.dumps(ntasks))
@@ -78,6 +84,7 @@ class Thread_Pool (threading.Thread):
 
     #向线程池中新增线程
     def add_thread(self,thread):
+
         self.threadPool.append(thread)
 
 

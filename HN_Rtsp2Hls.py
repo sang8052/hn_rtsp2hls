@@ -11,16 +11,16 @@ _ip = ""
 _task_time = 0
 _log_dir = ""
 _hls_dir = ""
-_ver = "1.0.beta"
+_ver = "1.1.beta"
 
 api = Flask(__name__)
 
 
 @api.route('/',methods=['GET','POST'])
-@api.route('/system')
+@api.route('/system',methods=['GET','POST'])
 # 获取当前系统（程序）的版本信息
 def get_System():
-    sys = {"os":public.sys_GetOs(),"cpu":public.sys_GetCpu(),"mem":public.sys_getMem(),"ver":gconfig["ver"]}
+    sys = {"os":public.sys_GetOs(),"cpu":public.sys_GetCpu(),"mem":public.sys_getMem(),"ver":_ver}
     return fre.success_response(sys)
 
 @api.route('/task',methods=['GET','POST'])
@@ -32,7 +32,7 @@ def get_TaskLine():
 @api.route("/play",methods=['GET','POST'])
 def task_PlayVideo():
     args = fre.request_obj()["args"]
-    parsg = [{"name":"videoId","len":["=",36]},{"name":"rtspUrl"},{"name":"hlsTime"},{"name":"hlsSize"}]
+    parsg = [{"name":"videoId","len":["=",32]},{"name":"rtspUrl"},{"name":"hlsTime"},{"name":"hlsSize"}]
     c = fre.check_args(parsg,args)
     if c:return c
     videoId = args["videoId"]
@@ -52,19 +52,29 @@ def task_PlayVideo():
             return fre.success_response(task)
     # 如果没有存在的进程 那么开始启动一个新的转流进程
     thread, task = htask.addTaskLine(videoId, rtspUrl,hlsTime,hlsSize, ffmpeg)
-    tpool.add_thread(thread)
     # 等待m3u8 切片文件存在
     wait_count = 0
     play_status = "success"
     while not os.path.exists(task["videoDir"] + "video1.ts"):
-        if wait_count > 15:
+        if wait_count > int(hlsTime) + 5:
             play_status = "timeout"
             break
         public.Print_Log("等待切片文件生成中...")
         time.sleep(1)
         wait_count = wait_count + 1
+    tpool.add_thread(thread)
+    task["threadHeart"] = int(time.time())
     task["wait_secord"] = wait_count -1
     task["play_status"] = play_status
+    task["waitRun"] = False
+    tasks = htask.getTaskAll()
+    kid = 0
+    for t in tasks:
+        if t["taskId"] == task["taskId"]:
+            tasks[kid] = task
+        else:
+            kid = kid + 1
+    public.WriteFile(_log_dir + "taskLine.json", json.dumps(tasks))
     return fre.success_response(task)
 
 
@@ -77,8 +87,9 @@ def task_StopVideo():
     task = htask.find_task(args["taskId"])
     if task:
         htask.remove_task(args["taskId"])
-        if task["threadPid"]!="":
-            os.system("bash kill-super.sh " + task["threadPid"])
+        if "threadPic" in task:
+            if task["threadPid"]!="":
+                os.system("bash kill-super.sh " + task["threadPid"])
         tpool.remove_thread(args["taskId"])
         status = "success"
     else:
@@ -96,10 +107,14 @@ def task_AliveVideo():
     expireTime = 0
     if task:
         tasks = htask.getTaskAll()
+        kid = 0
         for task in tasks:
             if task["taskId"] == args["taskId"]:
                 task["task_runAlive"] = task["task_runAlive"] + args["alive"]
-        public.WriteFile(_log_dir + "taskLine.json",json.dumps(task))
+                tasks[kid] = task
+            else:
+                kid = kid + 1
+        public.WriteFile(_log_dir + "taskLine.json",json.dumps(tasks))
         status = "success"
         expireTime = task["task_Init"]  + task["task_runAlive"] + _task_time
     else:

@@ -54,6 +54,7 @@ class HN_Task():
         task["task_run"]= 0
         task["threadHeart"] = int(time.time())
         task["threadPid"] = thread.get_threadPid()
+        task["waitRun"] = True
         taskLine = self.getTaskLine()
         taskLine["all"].append(task)
         public.WriteFile(self.log_taskLine, json.dumps(taskLine["all"]))
@@ -82,7 +83,7 @@ class HN_Task():
         task = {
                 "taskId":public.GetStrUuid(),"task_Init":int(time.time()),"task_run":0,"task_runAlive":0,
                 "videoId": videoId, "rtspUrl": rtspUrl,"ffmpeg_shell":shell,"videoUrl":videoId + "/video.m3u8","videoDir":self.hls_dir + videoId +"/",
-                "threadHeart":int(time.time())
+                "threadHeart":int(time.time()),"waitRun":True,
         }
         public.Print_Log("线程参数构造完成，准备启动线程...")
         thread =Thread_FFmpeg.Thread_FFmpeg(task["taskId"],"FFmpeg Rtsp To Hls", videoId, task["ffmpeg_shell"] , self.log_dir)

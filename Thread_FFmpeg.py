@@ -51,4 +51,14 @@ echo $pid > "./shell/TASK_%s.pid"
         return self.pid
 
 
+    def set_threadWait(self):
+        self.threadWait = True
+
+    def unset_threadWait(self):
+        self.threadWait = False
+
+    def status_threadWait(self):
+        return self.threadWait
+
+
 
