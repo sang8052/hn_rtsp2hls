@@ -11,16 +11,15 @@ _ip = ""
 _task_time = 0
 _log_dir = ""
 _hls_dir = ""
-_ver = "1.3.beta"
+_ver = "1.3.1.beta"
 
 api = Flask(__name__)
 
 
 @api.route('/',methods=['GET','POST'])
-@api.route('/system',methods=['GET','POST'])
 # 获取当前系统（程序）的版本信息
 def get_System():
-    sys = {"os":public.sys_GetOs(),"cpu":public.sys_GetCpu(),"mem":public.sys_getMem(),"ver":_ver}
+    sys = {"os":public.sys_GetOs(),"ver":_ver}
     return fre.success_response(sys)
 
 @api.route('/task',methods=['GET','POST'])
@@ -67,6 +66,7 @@ def task_PlayVideo():
     task["wait_secord"] = wait_count -1
     task["play_status"] = play_status
     task["waitRun"] = False
+    task["threadPid"] = thread.pid
     tasks = htask.getTaskAll()
     kid = 0
     for t in tasks:
@@ -142,13 +142,6 @@ if __name__ == '__main__':
         os.mkdir(_log_dir)
     if not os.path.exists(_hls_dir):
         os.mkdir(_hls_dir)
-
-
-
-    # 启动前准备工作 杀死所有携带参数 HNId=Rtsp2Hls 的进程
-    #tasks = public.GetSystemTask("HNId=Rtsp2Hls")
-    #for task in tasks:
-    #    os.popen("kill -9 "+task["pid"])
 
     if os.path.exists(_log_dir + "taskLine.json"):
         os.remove(_log_dir + "taskLine.json")

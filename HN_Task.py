@@ -70,7 +70,7 @@ class HN_Task():
         if ffmpeg:
             shell = ffmpeg
         else:
-            shell = 'ffmpeg -rtsp_transport tcp -i "__RTSPURL__" -fflags flush_packets -max_delay 1 -an -flags -global_header -hls_time __HLSTIME__ -hls_list_size __HLSSIZE__ -hls_flags delete_segments+omit_endlist+split_by_time -vcodec libx264 -y __VIDEOOUTDIR__/video.m3u8'
+            shell = 'ffmpeg -rtsp_transport tcp -i "__RTSPURL__" -fflags flush_packets -max_delay 1 -an -flags -global_header -hls_time __HLSTIME__ -hls_list_size __HLSSIZE__ -hls_flags omit_endlist+split_by_time -vcodec libx264 -y __VIDEOOUTDIR__/video.m3u8'
         if not os.path.exists(self.hls_dir + videoId):
             os.mkdir(self.hls_dir + videoId)
         else:
@@ -89,7 +89,6 @@ class HN_Task():
         thread =Thread_FFmpeg.Thread_FFmpeg(task["taskId"],"FFmpeg Rtsp To Hls", videoId, task["ffmpeg_shell"] , self.log_dir)
         thread.start()
 
-        #task["threadPid"] = thread.get_threadPid()
         taskLine = self.getTaskLine()
         taskLine["all"].append(task)
         public.WriteFile(self.log_taskLine, json.dumps(taskLine["all"]))
