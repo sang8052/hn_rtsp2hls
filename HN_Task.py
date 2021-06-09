@@ -58,11 +58,7 @@ class HN_Task():
         taskLine = self.getTaskLine()
         taskLine["all"].append(task)
         public.WriteFile(self.log_taskLine, json.dumps(taskLine["all"]))
-
         return thread,task
-
-
-
 
     def addTaskLine(self,videoId,rtspUrl,hls_time,hls_size,ffmpeg=False):
         if not os.path.exists(self.log_taskdir):
@@ -74,8 +70,14 @@ class HN_Task():
         if not os.path.exists(self.hls_dir + videoId):
             os.mkdir(self.hls_dir + videoId)
         else:
-            os.system("rm -rf "+ self.hls_dir + videoId + "/*")
+            os.system("rm -rf "+ self.hls_dir + videoId )
+            os.mkdir(self.hls_dir + videoId)
         shell = shell.replace("ffmpeg", "/usr/local/ffmpeg/bin/ffmpeg")
+        # 检查是否存在全局强制 hls 配置文件
+        if os.path.exists("hls.json"):
+            hls = json.loads(public.ReadFile("hls.json"))
+            hls_time = hls["time"]
+            hls_size = hls["size"]
         shell = shell.replace("__HLSTIME__", hls_time)
         shell = shell.replace("__HLSSIZE__", hls_size)
         shell = shell.replace("__RTSPURL__", rtspUrl)
@@ -83,6 +85,7 @@ class HN_Task():
         task = {
                 "taskId":public.GetStrUuid(),"task_Init":int(time.time()),"task_run":0,"task_runAlive":0,
                 "videoId": videoId, "rtspUrl": rtspUrl,"ffmpeg_shell":shell,"videoUrl":videoId + "/video.m3u8","videoDir":self.hls_dir + videoId +"/",
+                'hls_time':hls_time,"hls_size":hls_size,
                 "threadHeart":int(time.time()),"waitRun":True,
         }
         public.Print_Log("线程参数构造完成，准备启动线程...")

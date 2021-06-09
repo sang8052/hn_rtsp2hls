@@ -11,7 +11,7 @@ _ip = ""
 _task_time = 0
 _log_dir = ""
 _hls_dir = ""
-_ver = "1.3.1.beta"
+_ver = "1.4.2"
 
 api = Flask(__name__)
 
@@ -42,20 +42,25 @@ def task_PlayVideo():
         ffmpeg = args.ffmpeg
     else:
         ffmpeg = None
-    taskAll = htask.getTaskLine()["all"]
-    # 检查是否有存活的进程
-    for task in taskAll:
-        if task["videoId"] == videoId:
-            task["wait_secord"] = 0
-            task["play_status"] = "alive"
-            return fre.success_response(task)
+    stask = public.GetSystemTask(videoId)
+    if len(stask) == 3:
+        while True:
+            taskAll = htask.getTaskLine()["all"]
+            # 检查是否有存活的进程
+            for task in taskAll:
+                if task["videoId"] == videoId:
+                    task["wait_secord"] = 0
+                    task["play_status"] = "alive"
+                    return fre.success_response(task)
+
+
     # 如果没有存在的进程 那么开始启动一个新的转流进程
     thread, task = htask.addTaskLine(videoId, rtspUrl,hlsTime,hlsSize, ffmpeg)
     # 等待m3u8 切片文件存在
     wait_count = 0
     play_status = "success"
-    while not os.path.exists(task["videoDir"] + "video1.ts"):
-        if wait_count > int(hlsTime) + 5:
+    while not os.path.exists(task["videoDir"] + "video"+task["hls_size"]+".ts"):
+        if wait_count > int(hlsTime) * int(task["hls_size"]) + 5:
             play_status = "timeout"
             break
         public.Print_Log("等待切片文件生成中...")
@@ -125,6 +130,9 @@ def task_AliveVideo():
 
 if __name__ == '__main__':
 
+    public.Print_Log("RTSP 转 HLS直播流控制工具,Version:" + _ver)
+    public.Print_Log("copyright © jshainei.com 2019-2021 ")
+
     # 加载配置文件
     try:
         config = json.loads(public.ReadFile("config.json"))
@@ -137,11 +145,13 @@ if __name__ == '__main__':
         public.Print_Log("[致命错误]加载核心配置文件出错，程序终止!")
         sys.exit(0)
 
+
     # 检查是否存在 日志文件夹 和 hls 输出文件夹
     if not os.path.exists(_log_dir):
         os.mkdir(_log_dir)
     if not os.path.exists(_hls_dir):
         os.mkdir(_hls_dir)
+
 
     if os.path.exists(_log_dir + "taskLine.json"):
         os.remove(_log_dir + "taskLine.json")
@@ -149,6 +159,8 @@ if __name__ == '__main__':
     if not os.path.exists("kill-super.sh"):
         shell = requests.get("https://mirrors.jshainei.com/smb/codesrc/shell/kill-super.sh").text
         public.WriteFile("kill-super.sh", shell)
+
+    public.cache_set("sysVer",_ver)
 
     time.sleep(1)
     public.Print_Log("转流任务队列初始化中...", _log_dir + "run.log")
@@ -164,6 +176,7 @@ if __name__ == '__main__':
     public.Print_Log("API 框架（FLASK）启动中...",_log_dir + "run.log")
     # 启动 API 进程
     api.run(_ip,_port)
+
 
 
 

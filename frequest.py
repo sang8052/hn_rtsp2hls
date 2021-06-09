@@ -5,15 +5,18 @@ from flask import Flask,request
 import public,HN_Task
 
 
+
+
+
 def success_response(data):
     return {"status": "success",
             "request_id": public.GetStrUuid(), "request_time": int(time.time()), "request_ip": request.remote_addr, "request_ua": request.remote_user,
-            "response": data}
+            "response": data,"ver":public.cache_get("sysVer")}
 
 def error_response(code,msg,e):
     return {"status": "error",
             "request_id": public.GetStrUuid(), "request_time": int(time.time()), "request_ip": request.remote_addr, "request_ua": request.remote_user,
-            "response": {"code": code, "msg": msg, "error": e}
+            "response": {"code": code, "msg": msg, "error": e},"ver":public.cache_get("sysVer")
             },code
 
 def check_args(args,input):
