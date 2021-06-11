@@ -11,7 +11,7 @@ _ip = ""
 _task_time = 0
 _log_dir = ""
 _hls_dir = ""
-_ver = "1.4.2"
+_ver = "1.4.3"
 
 api = Flask(__name__)
 
@@ -60,7 +60,9 @@ def task_PlayVideo():
     wait_count = 0
     play_status = "success"
     while not os.path.exists(task["videoDir"] + "video"+task["hls_size"]+".ts"):
-        if wait_count > int(hlsTime) * int(task["hls_size"]) + 5:
+        timeout = int(hlsTime) * int(task["hls_size"]) + 8
+        if timeout >=18 :timeout = 18
+        if wait_count > timeout :
             play_status = "timeout"
             break
         public.Print_Log("等待切片文件生成中...")
