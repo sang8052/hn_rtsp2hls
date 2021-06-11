@@ -4,5 +4,6 @@
   "log_dir": "./logs/",
   "rect_port":  8999,
   "rect_ip":  "0.0.0.0",
-  "task_time": 3600
+  "task_time": 3600,
+  "hls_timeout": 20
 }

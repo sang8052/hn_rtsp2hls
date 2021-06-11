@@ -6,12 +6,8 @@ from flask import Flask,request
 import public,HN_Task,Thread_Pool
 import frequest as fre
 
-_port = 0
-_ip = ""
-_task_time = 0
-_log_dir = ""
-_hls_dir = ""
-_ver = "1.4.3"
+
+_ver = "1.5.beta"
 
 api = Flask(__name__)
 
@@ -38,31 +34,29 @@ def task_PlayVideo():
     rtspUrl = args["rtspUrl"]
     hlsTime = str(args["hlsTime"])
     hlsSize = str(args["hlsSize"])
+    public.Print_Log("执行视频串流，videoId:" + videoId)
     if "ffmpeg" in args:
         ffmpeg = args.ffmpeg
     else:
         ffmpeg = None
-    stask = public.GetSystemTask(videoId)
-    if len(stask) == 3:
-        while True:
-            taskAll = htask.getTaskLine()["all"]
-            # 检查是否有存活的进程
-            for task in taskAll:
-                if task["videoId"] == videoId:
-                    task["wait_secord"] = 0
-                    task["play_status"] = "alive"
-                    return fre.success_response(task)
+        public.Print_Log("取系统运行任务队列成功!")
 
+    taskAll = htask.getTaskLine()["all"]
+    # 检查是否有存活的进程
+    for task in taskAll:
+        if task["videoId"] == videoId:
+            task["wait_secord"] = 0
+            task["play_status"] = "alive"
+            return fre.success_response(task)
 
     # 如果没有存在的进程 那么开始启动一个新的转流进程
+    public.Print_Log("开始启动一个新的转流进程!")
     thread, task = htask.addTaskLine(videoId, rtspUrl,hlsTime,hlsSize, ffmpeg)
     # 等待m3u8 切片文件存在
     wait_count = 0
     play_status = "success"
     while not os.path.exists(task["videoDir"] + "video"+task["hls_size"]+".ts"):
-        timeout = int(hlsTime) * int(task["hls_size"]) + 8
-        if timeout >=18 :timeout = 18
-        if wait_count > timeout :
+        if wait_count > config["hls_timeout"] :
             play_status = "timeout"
             break
         public.Print_Log("等待切片文件生成中...")
@@ -74,14 +68,14 @@ def task_PlayVideo():
     task["play_status"] = play_status
     task["waitRun"] = False
     task["threadPid"] = thread.pid
-    tasks = htask.getTaskAll()
+    tasks = htask.getTaskLine()["all"]
     kid = 0
     for t in tasks:
         if t["taskId"] == task["taskId"]:
             tasks[kid] = task
         else:
             kid = kid + 1
-    public.WriteFile(_log_dir + "taskLine.json", json.dumps(tasks))
+    htask.set_task(tasks)
     return fre.success_response(task)
 
 
@@ -113,7 +107,7 @@ def task_AliveVideo():
     task = htask.find_task(args["taskId"])
     expireTime = 0
     if task:
-        tasks = htask.getTaskAll()
+        tasks = htask.getTaskLine()["all"]
         kid = 0
         for task in tasks:
             if task["taskId"] == args["taskId"]:
@@ -121,9 +115,9 @@ def task_AliveVideo():
                 tasks[kid] = task
             else:
                 kid = kid + 1
-        public.WriteFile(_log_dir + "taskLine.json",json.dumps(tasks))
+        htask.set_task(tasks)
         status = "success"
-        expireTime = task["task_Init"]  + task["task_runAlive"] + _task_time
+        expireTime = task["task_Init"]  + task["task_runAlive"] + config["task_time"]
     else:
         status = "dead"
     stop={"taskId":args["taskId"],"status":status,"expireTime":expireTime}
@@ -138,25 +132,17 @@ if __name__ == '__main__':
     # 加载配置文件
     try:
         config = json.loads(public.ReadFile("config.json"))
-        _port = int(config["rect_port"])
-        _task_time = int(config["task_time"])
-        _ip = config["rect_ip"]
-        _log_dir  = config["log_dir"]
-        _hls_dir  = config["hls_dir"]
     except:
         public.Print_Log("[致命错误]加载核心配置文件出错，程序终止!")
         sys.exit(0)
 
 
     # 检查是否存在 日志文件夹 和 hls 输出文件夹
-    if not os.path.exists(_log_dir):
-        os.mkdir(_log_dir)
-    if not os.path.exists(_hls_dir):
-        os.mkdir(_hls_dir)
+    if not os.path.exists(config["log_dir"]):
+        os.mkdir(config["log_dir"])
+    if not os.path.exists(config["hls_dir"]):
+        os.mkdir(config["hls_dir"])
 
-
-    if os.path.exists(_log_dir + "taskLine.json"):
-        os.remove(_log_dir + "taskLine.json")
 
     if not os.path.exists("kill-super.sh"):
         shell = requests.get("https://mirrors.jshainei.com/smb/codesrc/shell/kill-super.sh").text
@@ -164,20 +150,30 @@ if __name__ == '__main__':
 
     public.cache_set("sysVer",_ver)
 
-    time.sleep(1)
-    public.Print_Log("转流任务队列初始化中...", _log_dir + "run.log")
-    htask = HN_Task.HN_Task(_log_dir,_hls_dir,_task_time)
+    ptask = {"alive": [], "all": []}
+    pthread = []
+
 
     time.sleep(1)
-    public.Print_Log("线程调度线程启动中...", _log_dir + "run.log")
-    tpool = Thread_Pool.Thread_Pool(public.GetStrUuid(),"HN Thread Pool Control",htask,_log_dir,_task_time)
+    public.Print_Log("转流任务队列初始化中...", config["log_dir"] + "run.log")
+    htask = HN_Task.HN_Task(config,ptask)
+
+    time.sleep(1)
+    public.Print_Log("线程调度线程启动中...",  config["log_dir"]  + "run.log")
+    tpool = Thread_Pool.Thread_Pool(public.GetStrUuid(),"HN Thread Pool Control",htask,config)
     tpool.start()
 
 
     time.sleep(1)
-    public.Print_Log("API 框架（FLASK）启动中...",_log_dir + "run.log")
+    public.Print_Log("API 框架（FLASK）启动中...",config["log_dir"] + "run.log")
+    spid = os.getpid()
+    prun = public.GetSystemTask("HN_Rtsp2Hls")
+    for p in prun:
+        if p["pid"] != str(spid):
+            os.system("kill -9 " + str(p["pid"]))
     # 启动 API 进程
-    api.run(_ip,_port)
+    api.run(config["rect_ip"],config["rect_port"])
+
 
 
 
