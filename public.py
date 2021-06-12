@@ -82,10 +82,21 @@ def GetSystemTask(grep):
                 else:
                     shell = shell + " " + s[st]
                 st = st + 1
+            #print(s)
             t = {"user": s[0], "pid": s[6], "pid_p": s[8], "cpu": s[10], "time_s": s[11], "tty": s[12], "time_c": s[16],
                  "shell": shell}
             tasks.append(t)
     return tasks
+
+def Kill_Process(pid):
+    for proc in psutil.process_iter():
+        try:
+            pinfo = proc.as_dict(attrs=['pid', 'ppid','name'])
+            if str(pinfo["ppid"]) == str(pid):
+                os.system("kill -9 " + str(pinfo["pid"]))
+        except psutil.NoSuchProcess:
+            pass
+    os.system("kill -9 " + str(pid))
 
 def cache_set(key,value):
     if not os.path.exists("./cache"):

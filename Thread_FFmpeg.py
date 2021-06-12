@@ -24,8 +24,8 @@ class Thread_FFmpeg (threading.Thread):
         public.Print_Log("进程命令执行成功")
         while self.status:
             time.sleep(1)
+        public.Kill_Process(self.pid)
 
-        os.system("bash kill-super.sh"+self.pid)
 
 
 

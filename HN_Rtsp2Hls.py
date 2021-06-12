@@ -7,7 +7,7 @@ import public,HN_Task,Thread_Pool
 import frequest as fre
 
 
-_ver = "1.5.beta"
+_ver = "1.5.2.beta"
 
 api = Flask(__name__)
 
@@ -90,7 +90,7 @@ def task_StopVideo():
         htask.remove_task(args["taskId"])
         if "threadPic" in task:
             if task["threadPid"]!="":
-                os.system("bash kill-super.sh " + task["threadPid"])
+                public.Kill_Process(task["threadPid"])
         tpool.remove_thread(args["taskId"])
         status = "success"
     else:
@@ -144,15 +144,15 @@ if __name__ == '__main__':
         os.mkdir(config["hls_dir"])
 
 
-    if not os.path.exists("kill-super.sh"):
-        shell = requests.get("https://mirrors.jshainei.com/smb/codesrc/shell/kill-super.sh").text
-        public.WriteFile("kill-super.sh", shell)
+
 
     public.cache_set("sysVer",_ver)
 
     ptask = {"alive": [], "all": []}
     pthread = []
 
+    # 启动前杀死所有的 ffmpeg 的进程
+    os.system("pkill -9 ffmpeg")
 
     time.sleep(1)
     public.Print_Log("转流任务队列初始化中...", config["log_dir"] + "run.log")
@@ -166,11 +166,16 @@ if __name__ == '__main__':
 
     time.sleep(1)
     public.Print_Log("API 框架（FLASK）启动中...",config["log_dir"] + "run.log")
-    spid = os.getpid()
-    prun = public.GetSystemTask("HN_Rtsp2Hls")
-    for p in prun:
-        if p["pid"] != str(spid):
-            os.system("kill -9 " + str(p["pid"]))
+    try:
+        spid = os.getpid()
+        prun = public.GetSystemTask("HN_Rtsp2Hls")
+        for p in prun:
+            if p["pid"] != str(spid):
+                os.system("kill -9 " + str(p["pid"]))
+    except:
+        public.Print_Log("自动进程KILL 异常...", config["log_dir"] + "run.log")
+        pass
+
     # 启动 API 进程
     api.run(config["rect_ip"],config["rect_port"])
 

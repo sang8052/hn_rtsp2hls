@@ -29,7 +29,7 @@ class Thread_Pool (threading.Thread):
                     aliveTime = self.config["task_time"] + task["task_runAlive"]
                     # 超过进程存活时间 , 杀死进程并 从队列中移除
                     if runTime > aliveTime:
-                        os.system("bash kill-super.sh  " + task["threadPid"])
+                        public.Kill_Process(task["threadPid"])
                         public.Print_Log("线程[" + task["taskId"] + "]因 超过最大运行时间 已经被从线程池移除",
                                          self.config["log_dir"] + "run.log")
                     else:
@@ -38,7 +38,7 @@ class Thread_Pool (threading.Thread):
                                 if task["play_status"] == "timeout":
                                     public.Print_Log("线程[" + task["taskId"] + "]因 视频启动超时 已经被从线程池移除",
                                                      self.config["log_dir"] + "run.log")
-                                    os.system("bash kill-super.sh  " + task["threadPid"])
+                                    public.Kill_Process(task["threadPid"])
                                 else:
                                     nthreadPool.append(thread)
                                     task["threadHeart"] = int(time.time())
@@ -58,7 +58,7 @@ class Thread_Pool (threading.Thread):
                                     public.Print_Log(
                                         "线程[" + task["taskId"] + "]因 无法找到进程对象（" + task["threadPid"] + "） 已经被从线程池移除",
                                         self.config["log_dir"] + "run.log")
-                                    os.system("bash kill-super.sh  " + task["threadPid"])
+                                    public.Kill_Process(task["threadPid"])
                                     public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...",
                                                      self.config["log_dir"] + "run.log")
                                     thread = self.task.resetTaskLine(task)
@@ -72,7 +72,7 @@ class Thread_Pool (threading.Thread):
                                 if not task["waitRun"]:
                                     public.Print_Log("线程[" + task["taskId"] + "]因 无法找到线程池对象 已经被从线程池移除",
                                                      self.config["log_dir"] + "run.log")
-                                    os.system("bash kill-super.sh  " + task["threadPid"])
+                                    public.Kill_Process(task["threadPid"])
                                     public.Print_Log("线程[" + task["taskId"] + "]自动重启动中...",
                                                      self.config["log_dir"] + "run.log")
                                     thread = self.task.resetTaskLine(task)
