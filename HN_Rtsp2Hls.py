@@ -7,7 +7,7 @@ import public,HN_Task,Thread_Pool
 import frequest as fre
 
 
-_ver = "1.5.2.beta"
+_ver = "1.6.1"
 
 api = Flask(__name__)
 
@@ -142,6 +142,8 @@ if __name__ == '__main__':
         os.mkdir(config["log_dir"])
     if not os.path.exists(config["hls_dir"]):
         os.mkdir(config["hls_dir"])
+    if not os.path.exists(config["hls_dir"] + "tasks"):
+        os.mkdir(config["hls_dir"] + "tasks")
 
 
 

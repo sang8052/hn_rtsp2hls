@@ -33,6 +33,8 @@ class Thread_FFmpeg (threading.Thread):
     def start_shell(self):
         if not os.path.exists("./shell"):
             os.mkdir("./shell")
+        if not os.path.exists(self.log_dir+"tasks"):
+            os.mkdir(self.log_dir+"tasks")
         fshell = """pid=$$
 echo $pid > "./shell/TASK_%s.pid"
 %s
